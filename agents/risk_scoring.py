@@ -147,7 +147,6 @@ def create_risk_scoring_agent() -> Agent:
             "Conclus avec une recommandation claire : ARMS peut-il aller en production ?",
         ],
         markdown=True,
-        show_tool_calls=True,
     )
 
 

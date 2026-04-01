@@ -1,17 +1,21 @@
 # ARMS Red Team — BNP Paribas EU AI Act Compliance
 
-> Atelier pratique : Conformité et Finance Agentique  
-> Simulation d'attaques sur le système ARMS (Agentic Risk Monitoring System)
+> Atelier de conformité et finance agentique  
+> Simulation **Red Team agentique** sur le système **ARMS** (Agentic Risk Monitoring System) — cadre pédagogique et d’exercice réglementaire.
 
-## Contexte
+## Vision du projet
 
-Suite à l'entrée en vigueur de l'EU AI Act, ce projet simule une **Red Team agentique** composée de 5 agents IA autonomes chargés de tester la résilience du système ARMS de BNP Paribas avant sa mise en production.
+Ce dépôt ne pilote **aucun système réel** de BNP Paribas : il orchestre **cinq agents IA** (via [Agno](https://docs.agno.com) et **Claude**) qui produisent des **rapports et analyses textuels** à partir de **prompts** et d’**outils simulés** (mocks). L’objectif est de **structurer un parcours Red Team** aligné sur l’**EU AI Act** et les attentes **DORA · MiCA · RGPD**, pour réfléchir à la résilience, à la traçabilité et à la conformité avant toute mise en production fictive.
 
-Réglementations couvertes : **DORA · MiCA · AI Act · RGPD**
+- **Enchaînement** : reconnaissance → attaques cyber → attaques ML → audit compliance → scoring de risque.  
+- **Prérequis runtime** : une clé API **Anthropic** uniquement (`ANTHROPIC_API_KEY`).  
+- **Modèle utilisé dans le code** : `claude-sonnet-4-5`.
+
+Les tableaux et scores illustrés plus bas (ex. risque global **0.84**) correspondent aux **scénarios simulés** intégrés aux agents, pas à un audit d’un environnement de production.
 
 ---
 
-## Architecture des 5 Agents
+## Architecture des 5 agents
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -43,37 +47,79 @@ Réglementations couvertes : **DORA · MiCA · AI Act · RGPD**
 
 | Agent | Fichier | Rôle |
 |-------|---------|------|
-| 🔍 Reconnaissance | `agents/reconnaissance.py` | Cartographie surfaces d'attaque |
-| ⚔️ Attaquant | `agents/attacker.py` | Injections transactions, exploit APIs |
-| 🤖 IA Adversaire | `agents/ai_adversary.py` | Data poisoning, adversarial ML |
-| ⚖️ Compliance Breaker | `agents/compliance_breaker.py` | Audit DORA / MiCA / AI Act |
-| 📊 Risk Scoring | `agents/risk_scoring.py` | Score risque + rapport final |
+| Reconnaissance | `agents/reconnaissance.py` | Cartographie des surfaces d’attaque |
+| Attaquant | `agents/attacker.py` | Simulations d’attaques (injections, flux, etc.) |
+| IA adversaire | `agents/ai_adversary.py` | Scénarios adversariaux sur le modèle ML |
+| Compliance Breaker | `agents/compliance_breaker.py` | Audit DORA / MiCA / AI Act (données d’audit simulées) |
+| Risk Scoring | `agents/risk_scoring.py` | Impact et rapport de risque final |
 
 ---
 
 ## Installation
 
+**Prérequis** : Python 3.10 ou supérieur recommandé.
+
 ```bash
-git clone https://github.com/<votre-username>/arms-redteam
-cd arms-redteam
+cd "Red Team Archi"   # ou le chemin de votre clone
+python -m venv .venv
+# Linux / macOS : source .venv/bin/activate
+# Windows PowerShell : .\.venv\Scripts\Activate.ps1
+
 pip install -r requirements.txt
 ```
 
+Le fichier `requirements.txt` inclut **agno**, le client **anthropic** (nécessaire pour le modèle Claude dans Agno) et **python-dotenv** (chargement d’un fichier `.env` local).
+
+---
+
 ## Configuration
+
+Une seule variable d’environnement est requise — **clé API Anthropic** (`ANTHROPIC_API_KEY`).
+
+**Option recommandée — fichier `.env` (déjà ignoré par Git)**
+
+```bash
+# Linux / macOS
+cp .env.example .env
+
+# Windows (PowerShell)
+Copy-Item .env.example .env
+```
+
+Puis éditer `.env` et renseigner `ANTHROPIC_API_KEY=...`.
+
+`main.py` charge automatiquement `.env` au démarrage.
+
+**Ou variables d’environnement classiques**
+
+**Linux / macOS**
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
-# ou pour OpenAI :
-export OPENAI_API_KEY="sk-..."
 ```
+
+**Windows (PowerShell)**
+
+```powershell
+$env:ANTHROPIC_API_KEY = "sk-ant-..."
+```
+
+Aucun autre fournisseur (OpenAI, Azure, etc.) n’est configuré dans ce dépôt.
+
+---
 
 ## Utilisation
 
+Par défaut, **tous** les agents s’exécutent **à la suite** (`--agent` omis ou `--agent all`).
+
 ```bash
-# Lancer la simulation complète (5 agents en séquence)
+# Simulation complète (5 agents)
 python main.py
 
-# Lancer un agent spécifique
+# Équivalent explicite
+python main.py --agent all
+
+# Un seul agent
 python main.py --agent reconnaissance
 python main.py --agent attacker
 python main.py --agent adversary
@@ -81,59 +127,67 @@ python main.py --agent compliance
 python main.py --agent scoring
 ```
 
----
-
-## Scénarios d'attaque simulés
-
-### Scénario 1 — Attaque Cyber (LCB-FT bypass + Webhook Spoof)
-1. **Smurfing** : injection de 10 transactions à 4 950€ (sous le seuil de détection)
-2. **Webhook Chainalysis spoofé** : validation d'un wallet blacklisté via HMAC bypass
-3. **JWT Replay** : token expiré accepté par l'API Gateway
-
-### Scénario 2 — Attaque IA/Data
-1. **Data poisoning** : 4% du dataset d'entraînement corrompu (label flipping)
-2. **Input perturbation** : ±3% sur les features → score risque 0.91 → 0.83 (sous le seuil)
-3. **Bias induction** : faux positifs corrélés avec l'attribut `country_of_origin`
+Les sorties sont affichées dans le terminal (streaming activé dans `main.py`).
 
 ---
 
-## Principaux Gaps Réglementaires Détectés
+## Scénarios d’attaque simulés
 
-| Sévérité | Réglementation | Infraction |
-|----------|---------------|------------|
-| 🔴 CRITIQUE | AI Act Art. 13 | Absence d'explicabilité (XAI) |
-| 🔴 CRITIQUE | AI Act Art. 14 | Absence de supervision humaine sur décisions critiques |
-| 🔴 CRITIQUE | MiCA Art. 83 | Smurfing crypto non détecté |
-| 🟠 ÉLEVÉ | DORA Art. 28 | Fournisseur tiers (Chainalysis) sans validation HMAC |
-| 🟠 ÉLEVÉ | DORA Art. 19 | Absence de procédure de reporting ICT en 4h |
+### Scénario 1 — Attaque cyber (LCB-FT, webhooks, API)
 
-**Score de risque global : 0.84 / 1.0 — Niveau CRITIQUE**  
-**Recommandation : MISE EN PRODUCTION BLOQUÉE**
+1. **Smurfing** : injection de transactions sous le seuil de détection.  
+2. **Webhook Chainalysis spoofé** : validation d’un wallet blacklisté (scénario HMAC).  
+3. **JWT replay** : token expiré accepté par la passerelle API (scénario).
+
+### Scénario 2 — Attaque IA / données
+
+1. **Data poisoning** : corruption partielle du jeu d’entraînement (label flipping).  
+2. **Perturbation des entrées** : variation des features pour abaisser le score de risque.  
+3. **Biais induit** : faux positifs corrélés à des attributs sensibles (scénario).
+
+---
+
+## Exemple de synthèse réglementaire (sortie type)
+
+Les lignes ci-dessous illustrent le **type de conclusions** que les agents peuvent produire dans l’exercice ; elles ne constituent pas un rapport officiel.
+
+| Sévérité | Réglementation | Exemple de constat (scénario) |
+|----------|----------------|-------------------------------|
+| Critique | AI Act Art. 13 | Absence ou insuffisance d’explicabilité (XAI) |
+| Critique | AI Act Art. 14 | Supervision humaine absente sur décisions à haut risque |
+| Critique | MiCA Art. 83 | Scénario de smurfing crypto non détecté |
+| Élevé | DORA Art. 28 | Chaîne de confiance fournisseur / intégrité des flux |
+| Élevé | DORA Art. 19 | Procédures de reporting ICT (scénario délai 4 h) |
+
+**Exemple de score global affiché dans l’exercice : ~0.84 / 1.0 — niveau critique (simulation).**  
+**Recommandation narrative possible dans le rapport agent : mise en production bloquée tant que les écarts ne sont pas traités (fiction pédagogique).**
 
 ---
 
 ## Structure du projet
 
 ```
-arms-redteam/
-├── main.py                      # Orchestrateur principal
+Red Team Archi/
+├── main.py                 # Orchestrateur CLI
 ├── requirements.txt
+├── .env.example            # Modèle pour ANTHROPIC_API_KEY (copier vers .env)
+├── .gitignore
 ├── README.md
 └── agents/
     ├── __init__.py
-    ├── reconnaissance.py        # Agent 1
-    ├── attacker.py              # Agent 2
-    ├── ai_adversary.py          # Agent 3
-    ├── compliance_breaker.py    # Agent 4
-    └── risk_scoring.py          # Agent 5
+    ├── reconnaissance.py
+    ├── attacker.py
+    ├── ai_adversary.py
+    ├── compliance_breaker.py
+    └── risk_scoring.py
 ```
 
 ---
 
 ## Framework
 
-Built with [Agno](https://docs.agno.com) — Multi-agent framework for Python.
+Construit avec **[Agno](https://docs.agno.com)** — framework multi-agents pour Python, modèle **Claude** (Anthropic).
 
 ---
 
-*Projet académique — Données simulées à des fins pédagogiques uniquement.*
+*Projet à visée pédagogique — données et système ARMS présentés comme **simulés** à des fins d’apprentissage et d’exercice de conformité.*

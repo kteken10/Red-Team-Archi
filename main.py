@@ -10,7 +10,8 @@ Orchestration séquentielle des 5 agents de la Red Team :
 5. Risk Scoring     → Impact financier, réglementaire, réputationnel
 
 Usage :
-    export ANTHROPIC_API_KEY="sk-ant-..."
+    cp .env.example .env   # puis renseigner ANTHROPIC_API_KEY dans .env
+    # ou : export ANTHROPIC_API_KEY="sk-ant-..."
     python main.py
 
     # Ou un agent spécifique :
@@ -19,11 +20,20 @@ Usage :
     python main.py --agent adversary
     python main.py --agent compliance
     python main.py --agent scoring
+
+    # Désactiver la génération de rapport :
+    python main.py --no-report
 """
 
 import argparse
 import sys
 import os
+from datetime import datetime
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Ajoute le dossier parent au path pour les imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -73,23 +83,64 @@ def print_separator(title: str):
     print("═" * width + "\n")
 
 
-def run_agent(agent_key: str):
+def run_agent(agent_key: str) -> str:
     config = AGENTS_CONFIG[agent_key]
     print_separator(config["description"])
     agent = config["factory"]()
     agent.print_response(config["prompt"], stream=True)
 
+    response = agent.run(config["prompt"], stream=False)
+    if response and hasattr(response, "content") and response.content:
+        return response.content
+    return ""
 
-def run_full_redteam():
+
+def save_report(sections: dict) -> Path:
+    reports_dir = Path("reports")
+    reports_dir.mkdir(exist_ok=True)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filepath = reports_dir / f"ARMS_RedTeam_{timestamp}.md"
+
+    now = datetime.now().strftime("%d/%m/%Y à %H:%M:%S")
+    lines = [
+        "# ARMS Red Team — Rapport Final",
+        f"**BNP Paribas · EU AI Act Compliance Exercise**  ",
+        f"*Généré le {now}*",
+        "",
+        "---",
+        "",
+    ]
+
+    for key in AGENT_ORDER:
+        config = AGENTS_CONFIG[key]
+        lines.append(f"## {config['description']}")
+        lines.append("")
+        content = sections.get(key, "").strip()
+        lines.append(content if content else "*Aucune réponse capturée.*")
+        lines.append("")
+        lines.append("---")
+        lines.append("")
+
+    filepath.write_text("\n".join(lines), encoding="utf-8")
+    return filepath
+
+
+def run_full_redteam(save: bool = True):
     print_separator("🚨 ARMS RED TEAM — BNP Paribas | EU AI Act Compliance Exercise")
     print("Lancement de la simulation complète avec 5 agents agentiques...\n")
 
+    sections = {}
     for key in AGENT_ORDER:
-        run_agent(key)
+        sections[key] = run_agent(key)
 
     print_separator("✅ Simulation Red Team terminée")
     print("Consultez les rapports de chaque agent ci-dessus.")
     print("Le rapport final de risque est disponible dans la sortie de l'Agent 5.\n")
+
+    if save:
+        filepath = save_report(sections)
+        print(f"📄 Rapport sauvegardé : {filepath}\n")
 
 
 def main():
@@ -102,6 +153,11 @@ def main():
         default="all",
         help="Agent à exécuter (default: all)"
     )
+    parser.add_argument(
+        "--no-report",
+        action="store_true",
+        help="Désactiver la sauvegarde du rapport markdown"
+    )
 
     args = parser.parse_args()
 
@@ -111,7 +167,7 @@ def main():
         sys.exit(1)
 
     if args.agent == "all":
-        run_full_redteam()
+        run_full_redteam(save=not args.no_report)
     else:
         run_agent(args.agent)
 

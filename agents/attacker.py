@@ -115,7 +115,6 @@ def create_attacker_agent() -> Agent:
             "Produis un rapport d'attaque structuré transmissible à l'Agent Compliance Breaker.",
         ],
         markdown=True,
-        show_tool_calls=True,
     )
 
 

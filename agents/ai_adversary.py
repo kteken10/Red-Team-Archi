@@ -126,7 +126,6 @@ def create_ai_adversary_agent() -> Agent:
             "Formule une conclusion sur la résistance globale du modèle aux attaques adversariales.",
         ],
         markdown=True,
-        show_tool_calls=True,
     )
 
 

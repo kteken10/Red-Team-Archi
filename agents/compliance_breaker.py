@@ -144,7 +144,6 @@ def create_compliance_breaker_agent() -> Agent:
             "Transmets ce rapport à l'Agent Impact & Risk Scoring pour évaluation financière.",
         ],
         markdown=True,
-        show_tool_calls=True,
     )
 
 

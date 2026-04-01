@@ -105,7 +105,6 @@ def create_reconnaissance_agent() -> Agent:
             "Transmets ce rapport à l'Agent Attaquant pour exploitation.",
         ],
         markdown=True,
-        show_tool_calls=True,
     )
 
 

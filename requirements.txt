@@ -1,0 +1,6 @@
+# ARMS Red Team — dépendances runtime
+# Python 3.10+ recommandé
+
+agno>=2.5.0
+anthropic>=0.40.0
+python-dotenv>=1.0.0
