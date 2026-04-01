@@ -83,13 +83,22 @@ def print_separator(title: str):
     print("═" * width + "\n")
 
 
-def run_agent(agent_key: str) -> str:
+def run_agent(agent_key: str, context: str = "") -> str:
     config = AGENTS_CONFIG[agent_key]
     print_separator(config["description"])
     agent = config["factory"]()
-    agent.print_response(config["prompt"], stream=True)
 
-    response = agent.run(config["prompt"], stream=False)
+    prompt = config["prompt"]
+    if context:
+        prompt = (
+            f"{prompt}\n\n"
+            f"---\n"
+            f"Rapport transmis par l'agent précédent :\n\n{context}"
+        )
+
+    agent.print_response(prompt, stream=True)
+
+    response = agent.run(prompt, stream=False)
     if response and hasattr(response, "content") and response.content:
         return response.content
     return ""
@@ -131,8 +140,10 @@ def run_full_redteam(save: bool = True):
     print("Lancement de la simulation complète avec 5 agents agentiques...\n")
 
     sections = {}
+    previous_output = ""
     for key in AGENT_ORDER:
-        sections[key] = run_agent(key)
+        sections[key] = run_agent(key, context=previous_output)
+        previous_output = sections[key]
 
     print_separator("✅ Simulation Red Team terminée")
     print("Consultez les rapports de chaque agent ci-dessus.")
